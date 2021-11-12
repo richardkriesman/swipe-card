@@ -1,3 +1,7 @@
+## 5.1.0
+
+- Made slide deep linking possible with `hash_navigation` option
+
 ## 4.0.0
 
 - Drop support for older Home Assistant versions

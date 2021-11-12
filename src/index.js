@@ -91,6 +91,13 @@ class SwipeCard extends LitElement {
     }
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._hashNavigationListener) {
+      window.removeEventListener("hashchange", this._hashNavigationListener);
+    }
+  }
+
   updated(changedProperties) {
     super.updated(changedProperties);
     this._updated = true;
@@ -169,6 +176,34 @@ class SwipeCard extends LitElement {
       this._parameters.initialSlide = this._config.start_card - 1;
     }
 
+    // configure hash-based navigation
+    if (
+      "hash_navigation" in this._config &&
+      typeof this._config.hash_navigation === "object"
+    ) {
+      // populate map of hash => slide index
+      this._hashNavigationMap = new Map(
+        Object.entries(this._config.hash_navigation).map(([hash, index]) => [
+          `#${hash}`,
+          index,
+        ])
+      );
+
+      // listen for changes to the hash
+      this._hashNavigationListener = () =>
+        this._onLocationHashChange(window.location.hash);
+      window.addEventListener("hashchange", this._hashNavigationListener);
+
+      // if a hash is set and there's an entry for it, override initialSlide
+      if (
+        window.location.hash &&
+        this._hashNavigationMap.has(window.location.hash)
+      ) {
+        this._parameters.initialSlide =
+          this._hashNavigationMap.get(window.location.hash) - 1;
+      }
+    }
+
     this.swiper = new Swiper(
       this.shadowRoot.querySelector(".swiper-container"),
       this._parameters
@@ -243,6 +278,16 @@ class SwipeCard extends LitElement {
     this.swiper.update();
   }
 
+  _onLocationHashChange() {
+    if (!this._hashNavigationMap.has(window.location.hash)) {
+      return;
+    }
+    this.swiper.slideTo(
+      this._hashNavigationMap.get(window.location.hash) - 1,
+      1000
+    );
+  }
+
   async getCardSize() {
     await this._cardPromises;
 
@@ -264,7 +309,7 @@ class SwipeCard extends LitElement {
 
 customElements.define("swipe-card", SwipeCard);
 console.info(
-  "%c   SWIPE-CARD  \n%c Version 5.0.0 ",
+  "%c   SWIPE-CARD  \n%c Version 5.1.0 ",
   "color: orange; font-weight: bold; background: black",
   "color: white; font-weight: bold; background: dimgray"
 );

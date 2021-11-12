@@ -46,3 +46,4 @@ And add a card with type `custom:swipe-card`:
 | `start_card` | number | | Any number | The card being displayed at the beginning |
 | `parameters` | object | | Any parameter from [here](http://idangero.us/swiper/api/) | Configuration of the swiper |
 | `reset_after` | number | | Any number | Will reset the swiper to the `start_card` if defined or the first card after `reset_after` seconds |
+| `hash_navigation` | map<string, number> | | Any string, any number | A map of URL hash strings to card numbers |
