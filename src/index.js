@@ -25,6 +25,26 @@ const computeCardSize = (card) => {
     .then(() => computeCardSize(card));
 };
 
+/**
+ * Monkey-patches {@link window.history.pushState}, enabling functions which
+ * listen for new history state.
+ */
+const HistorySpy = (() => {
+  const listeners = new Set();
+
+  window.history.pushState = new Proxy(window.history.pushState, {
+    apply: (target, thisArg, argArray) => {
+      target.apply(thisArg, argArray);
+      listeners.forEach((fn) => fn(...argArray));
+    },
+  });
+
+  return {
+    on: (fn) => listeners.add(fn),
+    off: (fn) => listeners.delete(fn),
+  };
+})();
+
 class SwipeCard extends LitElement {
   static get properties() {
     return {
@@ -95,6 +115,7 @@ class SwipeCard extends LitElement {
     super.disconnectedCallback();
     if (this._hashNavigationListener) {
       window.removeEventListener("hashchange", this._hashNavigationListener);
+      HistorySpy.off(this._hashNavigationListener);
     }
   }
 
@@ -193,6 +214,7 @@ class SwipeCard extends LitElement {
       this._hashNavigationListener = () =>
         this._onLocationHashChange(window.location.hash);
       window.addEventListener("hashchange", this._hashNavigationListener);
+      HistorySpy.on(this._hashNavigationListener);
 
       // if a hash is set and there's an entry for it, override initialSlide
       if (
@@ -278,14 +300,11 @@ class SwipeCard extends LitElement {
     this.swiper.update();
   }
 
-  _onLocationHashChange() {
-    if (!this._hashNavigationMap.has(window.location.hash)) {
+  _onLocationHashChange(hash) {
+    if (!this._hashNavigationMap.has(hash)) {
       return;
     }
-    this.swiper.slideTo(
-      this._hashNavigationMap.get(window.location.hash) - 1,
-      1000
-    );
+    this.swiper.slideTo(this._hashNavigationMap.get(hash) - 1, 300);
   }
 
   async getCardSize() {
